@@ -1,4 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, VERSION } from '@angular/core';
+import { of, BehaviorSubject, concat } from 'rxjs';
+import { delay, debounceTime, distinctUntilChanged, switchMap, map } from 'rxjs/operators';
+
+import { ProductsService } from './products.service';
 
 @Component({
   selector: 'app-root',
@@ -7,4 +11,19 @@ import { Component } from '@angular/core';
 })
 export class AppComponent {
   title = 'loading2';
+  searchStream$ = new BehaviorSubject('');
+
+  constructor(private productsService: ProductsService) {}
+
+  obs$ = this.searchStream$.pipe(
+    debounceTime(200),
+    distinctUntilChanged(),
+    switchMap((query) => 
+      concat(
+        of({ type: 'start'}),
+        this.productsService.getByFilter(query).pipe(map(value => ({ type: 'finish', value })))
+      ))
+  );
 }
+
+
